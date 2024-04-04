@@ -5788,8 +5788,7 @@ class WAS_Remove_Rembg:
      # Conforms to https://docs.python.org/3/library/stdtypes.html#truth-value-testing
      # With the addition of evaluating string representations of Falsey types
     def __convertToBool(self, x):
-
-        # Evaluate string representation of False types
+        print(f"Converting {x} to boolean")
         if type(x) == str:
             x = x.strip()
             if (x.lower() == 'false'
@@ -5807,11 +5806,13 @@ class WAS_Remove_Rembg:
                 or x.lower() == "set()"
                 or x.lower() == "range(0)"
             ):
+                print(f"Converted {x} to False")
                 return False
             else:
+                print(f"Converted {x} to True")
                 return True
 
-        # Anything else will be evaluated by the bool function
+        print(f"Converted {x} to {bool(x)} using bool function")
         return bool(x)
 
     def image_rembg(
@@ -5826,16 +5827,17 @@ class WAS_Remove_Rembg:
             post_processing=False,
             only_mask=False,
             background_color="none",
-            # putalpha = False,
     ):
 
-        # ComfyUI will allow strings in place of booleans, validate the input.
+        print(f"Input parameters: {locals()}")
         transparency = transparency if type(transparency) is bool else self.__convertToBool(transparency)
         alpha_matting = alpha_matting if type(alpha_matting) is bool else self.__convertToBool(alpha_matting)
         post_processing = post_processing if type(post_processing) is bool else self.__convertToBool(post_processing)
         only_mask = only_mask if type(only_mask) is bool else self.__convertToBool(only_mask)
 
+        print(f"Converted parameters: {locals()}")
         if "rembg" not in packages():
+            print("rembg not in packages, installing...")
             install_package("rembg")
 
         from rembg import remove, new_session
@@ -5843,7 +5845,6 @@ class WAS_Remove_Rembg:
         os.environ['U2NET_HOME'] = os.path.join(MODELS_DIR, 'rembg')
         os.makedirs(os.environ['U2NET_HOME'], exist_ok=True)
 
-        # Set bgcolor
         bgrgba = None
         if background_color == "black":
             bgrgba = [0, 0, 0, 255]
@@ -5858,11 +5859,13 @@ class WAS_Remove_Rembg:
         else:
             bgrgba = None
 
+        print(f"Background color: {bgrgba}")
         if transparency and bgrgba is not None:
             bgrgba[3] = 0
 
         batch_tensor = []
         for image in images:
+            print(f"Processing image: {image}")
             image = tensor2pil(image)
             batch_tensor.append(pil2tensor(
                 remove(
@@ -5875,11 +5878,11 @@ class WAS_Remove_Rembg:
                     alpha_matting_erode_size=alpha_matting_erode_size,
                     only_mask=only_mask,
                     bgcolor=bgrgba,
-                    # putalpha = putalpha,
                 )
                 .convert(('RGBA' if transparency else 'RGB'))))
         batch_tensor = torch.cat(batch_tensor, dim=0)
 
+        print(f"Final batch tensor: {batch_tensor}")
         return (batch_tensor,)
 
 
